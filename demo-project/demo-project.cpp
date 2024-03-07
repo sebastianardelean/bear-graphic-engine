@@ -101,7 +101,7 @@ static bool HndlDraw(void)
        
 
 
-
+            
 #endif
         return TRUE;
     }

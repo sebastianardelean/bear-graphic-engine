@@ -7,7 +7,7 @@
 #define BEARENGINE_API __declspec(dllimport)
 #endif
 #elif defined(__unix__)
-#define LIBQPP_API 
+#define BEARENGINE_API 
 #endif // _WIN32
 
 #include <vector>
