@@ -14,8 +14,8 @@
 
 
 extern LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-extern INT EngineCreateWindow(const std::wstring& cTitle);
-
+extern int EngineCreateWindow(const std::wstring& cTitle);
+extern int EngineInitializeGraphics();
 extern void EngineDestroyWindow();
 
 extern void EngineDrawScene();
@@ -27,6 +27,34 @@ extern void EngineGetWindowSize(
     int32_t* iWindowHeight
 );
 #pragma endregion
+
+#pragma region engine_specific
+
+static std::atomic<bool>bAtomicActive{ false };
+
+static void EngineThreadHandler(bool(*FctDraw)(void));
+#pragma endregion
+
+
+void EngineThreadHandler(bool(*FctDraw)(void))
+{
+    
+    if (EngineInitializeGraphics() != 0)
+        return;
+    EngineDrawScene();
+    
+    while (bAtomicActive) {
+ 
+        
+        if (FctDraw())
+        {
+            EngineDrawScene();
+        }
+        
+  
+  
+    }
+}
 
 namespace bear
 {
@@ -59,6 +87,7 @@ namespace bear
 
     int32_t HndlEngineCreateWindow()
     {
+
         return EngineCreateWindow(
             L"Bear Engine"
         );
@@ -68,32 +97,34 @@ namespace bear
 
     void HndlEngineRun(bool(*FctDraw)(void))
     {
-        MSG msg;
-        bool bDone = FALSE;
-        EngineDrawScene();
-        while (!bDone)
+
+        bAtomicActive = true;
+        std::thread t=std::thread(EngineThreadHandler, FctDraw);
+
+        /*
+        while (GetMessage(&msg, NULL, 0, 0) > 0)
         {
-            if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-            {
-                if (msg.message == WM_QUIT)
-                {
-                    bDone = true;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }*/
+
+        MSG msg;
+        while(bAtomicActive){
+            if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+                if (msg.message == WM_QUIT) {
+                    bAtomicActive = false;
                 }
-                else
-                {
+                else {
                     TranslateMessage(&msg);
                     DispatchMessage(&msg);
                 }
             }
-            else
-            {
-                //Draw the scene
-                if (FctDraw())
-                {
-                    EngineDrawScene();
-                }
-            }
         }
+        t.join();
+        
+  
+
+        
         EngineDestroyWindow();
     }
 }

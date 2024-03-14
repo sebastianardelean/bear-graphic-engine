@@ -31,16 +31,22 @@ static bool HndlDraw(void)
     int32_t windowHeight = 0;
     bear::HndlEngineGetWindowSize(&windowWidth, &windowHeight);
 
+    std::vector<bear::Point> draw;
     for (i = 0; i < windowWidth; i++)
     {
         for (j = 0; j < windowHeight; j++)
         {
             coordinate_t p = { (float)i,(float)j, -1.0f };
             color_t color = { rand() % 255u, rand() % 255u, rand() % 255u, 0 };
-            bear::Point ptr = bear::Point(p, color);
-            ptr.Draw(false);
+            draw.push_back(bear::Point(p, color));
+
         }
     }
+    for (bear::Point p : draw) {
+        p.Draw(false);
+    }
+    return TRUE;
+ 
     if (bear::HndlEngineGetKeyState(VK_F2))
     {
 
@@ -55,6 +61,8 @@ static bool HndlDraw(void)
     }
     if (bear::HndlEngineGetKeyState(VK_F1))
     {
+       
+    }
 #if 0
         bear::Sprite spr = bear::Sprite(100, 100, L"c:\\Users\\sardelean\\Documents\\workspace\\bear-graphic-engine\\NeHe.bmp");
         spr.Draw();
@@ -108,9 +116,9 @@ static bool HndlDraw(void)
 
             
 #endif
-        return TRUE;
-    }
-    return TRUE;
+        
+    
+    return FALSE;
 }
 
 int main(void)

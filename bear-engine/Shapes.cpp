@@ -2,7 +2,7 @@
 #include "framework.h"
 #include "Shapes.h"
 
-extern window_t g_sWindowConfiguration;
+extern volatile window_t g_sWindowConfiguration;
 
 extern void EngineLoadImageFromFile(sprite_t*, const std::wstring&);
 extern void EngineCreateTextureFromImageFile(
@@ -10,6 +10,8 @@ extern void EngineCreateTextureFromImageFile(
 	texture_filter_type_t eFilterType,
 	DWORD32* dwTextureId
 );
+
+
 
 namespace bear
 {
@@ -65,7 +67,7 @@ namespace bear
 
 	void Shape::Draw(bool bIsLightEnabled)
 	{
-
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spr->width, spr->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, spr->GetData());
 		switch (g_svCoordinates.size())
 		{
 		case ShapeType_t::SHAPE_POINT:

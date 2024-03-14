@@ -21,14 +21,20 @@ static GLfloat g_faLightAmbient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 static GLfloat g_faLightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 static GLfloat g_faLightPosition[] = { 0.0f, 0.0f, 2.0f, 1.0f };
 
-extern window_t g_sWindowConfiguration;
 
-window_t g_sWindowConfiguration = {
+
+extern volatile window_t g_sWindowConfiguration;
+
+
+
+volatile window_t g_sWindowConfiguration = {
     .iWindowWidth= 800,
     .iWindowHeight = 600,
     .bIsFullScreen = FALSE,
     .bBitsPerColor = 32
 };
+
+
 
 static GLvoid InitGL(GLvoid);
 
@@ -36,9 +42,9 @@ static GLvoid ResizeGLScene(GLsizei width, GLsizei height);
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+extern int EngineInitializeGraphics();
 
-
-extern INT EngineCreateWindow(const std::wstring & cTitle);
+extern int EngineCreateWindow(const std::wstring & cTitle);
 
 extern void EngineDestroyWindow();
 
@@ -57,8 +63,11 @@ void EngineGetWindowSize(
     int32_t *iWindowHeight
 )
 {
+   
     *iWindowWidth = g_sWindowConfiguration.iWindowWidth;
     *iWindowHeight = g_sWindowConfiguration.iWindowHeight;
+        
+   
 }
 
 BOOL EngineGetKeyState(const BYTE bKeyCode)
@@ -70,42 +79,27 @@ BOOL EngineGetKeyState(const BYTE bKeyCode)
 
 
 
-INT EngineCreateWindow(const std::wstring &cTitle)
+int EngineCreateWindow(const std::wstring &cTitle)
 {
-  GLuint PixelFormat = 0 ;
+  
   WNDCLASS wc = {};
-  DWORD dwExStyle;
-  DWORD dwStyle;
+
   RECT rWindowRect;
 
 
+  DWORD dwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
+  DWORD dwStyle = WS_CAPTION | WS_SYSMENU | WS_VISIBLE | WS_THICKFRAME;
 
-  Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-
-  // Initialize GDI+.
-  if(Gdiplus::GdiplusStartup(&g_ptrGdiplusToken, &gdiplusStartupInput, NULL)!=0)
-  {
-    g_ptrGdiplusToken = NULL;
-    return GetLastError();
-  }
-  
-
-
-  rWindowRect.left = (DWORDLONG)0;
-  rWindowRect.right = (DWORDLONG)g_sWindowConfiguration.iWindowWidth;
-  rWindowRect.top = (DWORDLONG)0;
-  rWindowRect.bottom = (DWORDLONG)g_sWindowConfiguration.iWindowHeight;
-  
   g_hInstance = GetModuleHandle(NULL);
 
   if (g_hInstance == NULL)
   {
     return GetLastError();
   }
+    
 
-
-
-  
+  wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+  wc.hCursor = LoadCursor(NULL, IDC_ARROW);
   wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
   wc.lpfnWndProc = (WNDPROC) WndProc;		
   wc.cbClsExtra = 0;				
@@ -123,7 +117,7 @@ INT EngineCreateWindow(const std::wstring &cTitle)
     return GetLastError();
   }
 
-  if (g_sWindowConfiguration.bIsFullScreen)
+  /*if (g_sWindowConfiguration.bIsFullScreen)
   {
     DEVMODE dmScreenSettings;
     memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
@@ -139,21 +133,32 @@ INT EngineCreateWindow(const std::wstring &cTitle)
       g_sWindowConfiguration.bIsFullScreen = FALSE;
     }
       
-  }
+  }*/
 
-  if(g_sWindowConfiguration.bIsFullScreen)
+  if (g_sWindowConfiguration.bIsFullScreen)
   {
-    dwExStyle = WS_EX_APPWINDOW;
-    dwStyle = WS_POPUP | WS_VISIBLE;
+      dwExStyle = 0;
+      dwStyle = WS_POPUP | WS_VISIBLE;
+      HMONITOR hmon = MonitorFromWindow(g_hWnd, MONITOR_DEFAULTTONEAREST);
+      MONITORINFO mi = { sizeof(mi) };
+      if (!GetMonitorInfo(hmon, &mi))
+          return GetLastError();
+      g_sWindowConfiguration.iWindowWidth = mi.rcMonitor.right;
+      g_sWindowConfiguration.iWindowHeight = mi.rcMonitor.bottom;
+  
+  
     ShowCursor(FALSE);
   }
-  else
-  {
-    dwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
-    dwStyle = WS_OVERLAPPEDWINDOW;
-  }
 
+  rWindowRect.left = (DWORDLONG)0;
+  rWindowRect.top = (DWORDLONG)0;
+  rWindowRect.right = (DWORDLONG)g_sWindowConfiguration.iWindowWidth;
+  rWindowRect.bottom = (DWORDLONG)g_sWindowConfiguration.iWindowHeight;
   AdjustWindowRectEx(&rWindowRect, dwStyle, FALSE, dwExStyle);
+
+  g_sWindowConfiguration.iWindowWidth = rWindowRect.right - rWindowRect.left;
+  g_sWindowConfiguration.iWindowHeight = rWindowRect.bottom - rWindowRect.top;
+  
 
   /*Create Window*/
   g_hWnd = CreateWindowEx(dwExStyle,
@@ -162,8 +167,8 @@ INT EngineCreateWindow(const std::wstring &cTitle)
                           dwStyle | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
                           0,
                           0,
-                          rWindowRect.right - rWindowRect.left,
-                          rWindowRect.bottom - rWindowRect.top,
+                          g_sWindowConfiguration.iWindowWidth,
+                          g_sWindowConfiguration.iWindowHeight,
                           NULL,
                           NULL,
                           g_hInstance,
@@ -173,53 +178,6 @@ INT EngineCreateWindow(const std::wstring &cTitle)
     utils::ReportError(L"Could not create window!");
     return GetLastError();
   }
-
-  PIXELFORMATDESCRIPTOR pfd =
-  {
-      sizeof(PIXELFORMATDESCRIPTOR), 1,
-      PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-      PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      PFD_MAIN_PLANE, 0, 0, 0, 0
-  };
-
-  g_hDC = GetDC(g_hWnd);
-  if (NULL == g_hDC)
-  {
-    utils::ReportError(L"Could not get Device Context");
-    return GetLastError();
-  }
-  PixelFormat = ChoosePixelFormat(g_hDC, &pfd);
-  if (0 == PixelFormat)
-  {
-    utils::ReportError(L"PixelFormat");
-    return GetLastError();
-  }
-
-  if(!SetPixelFormat(g_hDC, PixelFormat, &pfd))
-  {
-    utils::ReportError(L"SetPixelFormat");
-    return GetLastError();
-  }
-
-  g_hRC = wglCreateContext(g_hDC);
-  if (NULL == g_hRC)
-  {
-    utils::ReportError(L"wglCreateContext");
-    return GetLastError();
-  }
-  if(!wglMakeCurrent(g_hDC, g_hRC))
-  {
-    utils::ReportError(L"wglMakeCurrent");
-    return GetLastError();
-  }
-
-  ShowWindow(g_hWnd, SW_SHOW);
-  SetForegroundWindow(g_hWnd);
-  SetFocus(g_hWnd);
-  ResizeGLScene(g_sWindowConfiguration.iWindowWidth, g_sWindowConfiguration.iWindowHeight);
-
-  InitGL();
-
   return 0;
   
   
@@ -276,8 +234,7 @@ void EngineDestroyWindow()
 
 void EngineDrawScene()
 {
-  /*Here will only swap buffers*/
-
+  
   SwapBuffers(g_hDC);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glLoadIdentity();
@@ -310,9 +267,11 @@ GLvoid ResizeGLScene(GLsizei width, GLsizei height)
    
   }
 
+  
   g_sWindowConfiguration.iWindowWidth = width;
   g_sWindowConfiguration.iWindowHeight = height;
-
+    
+  
   GLfloat aspect = (GLfloat)width/(GLfloat)height;
   glViewport(0, 0, width, height);
 
@@ -325,6 +284,67 @@ GLvoid ResizeGLScene(GLsizei width, GLsizei height)
   glLoadIdentity();
 
 }
+
+
+int EngineInitializeGraphics()
+{
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    GLuint PixelFormat = 0;
+    // Initialize GDI+.
+    if (Gdiplus::GdiplusStartup(&g_ptrGdiplusToken, &gdiplusStartupInput, NULL) != 0)
+    {
+        g_ptrGdiplusToken = NULL;
+        return GetLastError();
+    }
+
+    PIXELFORMATDESCRIPTOR pfd =
+    {
+        sizeof(PIXELFORMATDESCRIPTOR), 1,
+        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+        PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        PFD_MAIN_PLANE, 0, 0, 0, 0
+    };
+
+    g_hDC = GetDC(g_hWnd);
+    if (NULL == g_hDC)
+    {
+        utils::ReportError(L"Could not get Device Context");
+        return GetLastError();
+    }
+    PixelFormat = ChoosePixelFormat(g_hDC, &pfd);
+    if (0 == PixelFormat)
+    {
+        utils::ReportError(L"PixelFormat");
+        return GetLastError();
+    }
+
+    if (!SetPixelFormat(g_hDC, PixelFormat, &pfd))
+    {
+        utils::ReportError(L"SetPixelFormat");
+        return GetLastError();
+    }
+
+    g_hRC = wglCreateContext(g_hDC);
+    if (NULL == g_hRC)
+    {
+        utils::ReportError(L"wglCreateContext");
+        return GetLastError();
+    }
+    if (!wglMakeCurrent(g_hDC, g_hRC))
+    {
+        utils::ReportError(L"wglMakeCurrent");
+        return GetLastError();
+    }
+    InitGL();
+    ResizeGLScene(g_sWindowConfiguration.iWindowWidth, g_sWindowConfiguration.iWindowHeight);
+
+
+    ShowWindow(g_hWnd, SW_SHOW);
+    SetForegroundWindow(g_hWnd);
+    SetFocus(g_hWnd);
+    
+}
+    
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -352,7 +372,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         g_baKeys[wParam] = FALSE;
         break;
     case WM_SIZE:
-        ResizeGLScene(LOWORD(lParam), HIWORD(lParam));
+        //ResizeGLScene(LOWORD(lParam), HIWORD(lParam));
         break;
     default:
         break;
