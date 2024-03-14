@@ -10,23 +10,32 @@
 #pragma comment (lib,"Gdiplus.lib")
 
 #pragma region imported_from_core
+
+
+
 extern LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-extern INT EngineCreateWindow(
-    const std::wstring& cTitle,
-    const INT iWinWidth,
-    const INT iWinHeight,
-    const BOOL bFullScreen
-);
+extern INT EngineCreateWindow(const std::wstring& cTitle);
 
 extern void EngineDestroyWindow();
 
 extern void EngineDrawScene();
 
 extern BOOL EngineGetKeyState(const BYTE bKeyCode);
+
+extern void EngineGetWindowSize(
+    int32_t* iWindowWidth,
+    int32_t* iWindowHeight
+);
 #pragma endregion
 
 namespace bear
 {
+
+    void HndlEngineGetWindowSize(int32_t* iWindowWidth, int32_t* iWindowHeight)
+    {
+        EngineGetWindowSize(iWindowWidth, iWindowHeight);
+    }
+
     void HndlEngineChangeLighting(
         bool bLightOn
     )
@@ -51,10 +60,7 @@ namespace bear
     int32_t HndlEngineCreateWindow()
     {
         return EngineCreateWindow(
-            L"Bear Engine",
-            SCREEN_WIDTH,
-            SCREEN_HEIGHT,
-            FULL_SCREEN
+            L"Bear Engine"
         );
 
     }

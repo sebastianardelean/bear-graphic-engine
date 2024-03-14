@@ -2,6 +2,8 @@
 #include "framework.h"
 #include "Shapes.h"
 
+extern window_t g_sWindowConfiguration;
+
 extern void EngineLoadImageFromFile(sprite_t*, const std::wstring&);
 extern void EngineCreateTextureFromImageFile(
 	const std::wstring& sImageFile,
@@ -37,16 +39,16 @@ namespace bear
 	coordinate_t Shape::Normalize3d(const coordinate_t coordinates)
 	{
 		coordinate_t newCoordinates = {};
-		newCoordinates.x = 2 * (coordinates.x / (float)SCREEN_WIDTH) - 1;
-		newCoordinates.y = 2 * (coordinates.y / (float)SCREEN_HEIGHT) - 1;
+		newCoordinates.x = 2 * (coordinates.x / (float)g_sWindowConfiguration.iWindowWidth) - 1;
+		newCoordinates.y = 2 * (coordinates.y / (float)g_sWindowConfiguration.iWindowHeight) - 1;
 		newCoordinates.z = coordinates.z;
 
-		newCoordinates.tx = 2 * (coordinates.tx / (float)SCREEN_WIDTH) - 1;
-		newCoordinates.ty = 2 * (coordinates.ty / (float)SCREEN_HEIGHT) - 1;
+		newCoordinates.tx = 2 * (coordinates.tx / (float)g_sWindowConfiguration.iWindowWidth) - 1;
+		newCoordinates.ty = 2 * (coordinates.ty / (float)g_sWindowConfiguration.iWindowHeight) - 1;
 		newCoordinates.tz = coordinates.tz;
 
-		newCoordinates.nx = 2 * (coordinates.nx / (float)SCREEN_WIDTH) - 1;
-		newCoordinates.ny = 2 * (coordinates.ny / (float)SCREEN_HEIGHT) - 1;
+		newCoordinates.nx = 2 * (coordinates.nx / (float)g_sWindowConfiguration.iWindowWidth) - 1;
+		newCoordinates.ny = 2 * (coordinates.ny / (float)g_sWindowConfiguration.iWindowHeight) - 1;
 		newCoordinates.nz = coordinates.nz;
 
 		return newCoordinates;

@@ -15,7 +15,10 @@ namespace bear
     void BEARENGINE_API HndlEngineChangeLighting(
         bool bLightOn
     );
-     bool BEARENGINE_API HndlEngineGetKeyState(uint8_t bKeyCode);
-     void BEARENGINE_API HndlEngineRun(bool(*FctDraw)(void));
+
+    void BEARENGINE_API HndlEngineGetWindowSize(int32_t *iWindowWidth, int32_t *iWindowHeight);
+
+    bool BEARENGINE_API HndlEngineGetKeyState(uint8_t bKeyCode);
+    void BEARENGINE_API HndlEngineRun(bool(*FctDraw)(void));
     int32_t BEARENGINE_API HndlEngineCreateWindow();
 };

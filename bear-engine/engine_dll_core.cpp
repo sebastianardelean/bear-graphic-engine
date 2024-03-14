@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "framework.h"
-#include "configuration.h"
+
 
 
 #define NUMBER_OF_KEYS 256
@@ -8,7 +8,7 @@
 
 /* Functions defined in this module. */
 static HWND g_hWnd = NULL;
-static BOOL g_bFullScreen = FALSE;
+
 static HDC g_hDC = NULL;
 static HGLRC g_hRC = NULL;
 static ULONG_PTR g_ptrGdiplusToken = 0;
@@ -21,18 +21,24 @@ static GLfloat g_faLightAmbient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
 static GLfloat g_faLightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 static GLfloat g_faLightPosition[] = { 0.0f, 0.0f, 2.0f, 1.0f };
 
+extern window_t g_sWindowConfiguration;
+
+window_t g_sWindowConfiguration = {
+    .iWindowWidth= 800,
+    .iWindowHeight = 600,
+    .bIsFullScreen = FALSE,
+    .bBitsPerColor = 32
+};
+
 static GLvoid InitGL(GLvoid);
 
 static GLvoid ResizeGLScene(GLsizei width, GLsizei height);
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-extern INT EngineCreateWindow(
-                        const std::wstring & cTitle,
-                        const INT iWinWidth,
-                        const INT iWinHeight,
-                        const BOOL bFullScreen
-                        );
+
+
+extern INT EngineCreateWindow(const std::wstring & cTitle);
 
 extern void EngineDestroyWindow();
 
@@ -40,8 +46,20 @@ extern void EngineDrawScene();
 
 extern BOOL EngineGetKeyState(const BYTE bKeyCode);
 
+extern void EngineGetWindowSize(
+    int32_t* iWindowWidth, 
+    int32_t *iWindowHeight
+);
 
 
+void EngineGetWindowSize(
+    int32_t* iWindowWidth,
+    int32_t *iWindowHeight
+)
+{
+    *iWindowWidth = g_sWindowConfiguration.iWindowWidth;
+    *iWindowHeight = g_sWindowConfiguration.iWindowHeight;
+}
 
 BOOL EngineGetKeyState(const BYTE bKeyCode)
 {
@@ -52,17 +70,15 @@ BOOL EngineGetKeyState(const BYTE bKeyCode)
 
 
 
-INT EngineCreateWindow(const std::wstring &cTitle,
-                       const INT iWinWidth,
-                       const INT iWinHeight,
-                       const BOOL bFullScreen
-                 )
+INT EngineCreateWindow(const std::wstring &cTitle)
 {
   GLuint PixelFormat = 0 ;
   WNDCLASS wc = {};
   DWORD dwExStyle;
   DWORD dwStyle;
   RECT rWindowRect;
+
+
 
   Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 
@@ -72,12 +88,14 @@ INT EngineCreateWindow(const std::wstring &cTitle,
     g_ptrGdiplusToken = NULL;
     return GetLastError();
   }
-   
+  
+
+
   rWindowRect.left = (DWORDLONG)0;
-  rWindowRect.right = (DWORDLONG)iWinWidth;
+  rWindowRect.right = (DWORDLONG)g_sWindowConfiguration.iWindowWidth;
   rWindowRect.top = (DWORDLONG)0;
-  rWindowRect.bottom = (DWORDLONG)iWinHeight;
-  g_bFullScreen = bFullScreen;
+  rWindowRect.bottom = (DWORDLONG)g_sWindowConfiguration.iWindowHeight;
+  
   g_hInstance = GetModuleHandle(NULL);
 
   if (g_hInstance == NULL)
@@ -105,25 +123,25 @@ INT EngineCreateWindow(const std::wstring &cTitle,
     return GetLastError();
   }
 
-  if (g_bFullScreen)
+  if (g_sWindowConfiguration.bIsFullScreen)
   {
     DEVMODE dmScreenSettings;
     memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
     dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-    dmScreenSettings.dmPelsWidth = iWinWidth;
-    dmScreenSettings.dmPelsHeight = iWinHeight;
-    dmScreenSettings.dmBitsPerPel = BITS_PER_COLOR;
+    dmScreenSettings.dmPelsWidth = g_sWindowConfiguration.iWindowWidth;
+    dmScreenSettings.dmPelsHeight = g_sWindowConfiguration.iWindowHeight;
+    dmScreenSettings.dmBitsPerPel = g_sWindowConfiguration.bBitsPerColor;
     dmScreenSettings.dmFields = DM_BITSPERPEL|DM_PELSWIDTH|DM_PELSHEIGHT;
 
     if (ChangeDisplaySettings (&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
     {
       utils::ReportError(L"The requested fullscreen mode is not supported!");
-      g_bFullScreen = FALSE;
+      g_sWindowConfiguration.bIsFullScreen = FALSE;
     }
       
   }
 
-  if(g_bFullScreen)
+  if(g_sWindowConfiguration.bIsFullScreen)
   {
     dwExStyle = WS_EX_APPWINDOW;
     dwStyle = WS_POPUP | WS_VISIBLE;
@@ -156,24 +174,6 @@ INT EngineCreateWindow(const std::wstring &cTitle,
     return GetLastError();
   }
 
- /* static PIXELFORMATDESCRIPTOR pfd =
-  {
-    sizeof(PIXELFORMATDESCRIPTOR),
-    1,
-    PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA,
-    BITS_PER_COLOR,
-    0,0,0,0,0,0,
-    0,
-    0,
-    0,
-    0,0,0,0,
-    32,
-    0,
-    0,
-    PFD_MAIN_PLANE,
-    0,
-    0,0,0
-  };*/
   PIXELFORMATDESCRIPTOR pfd =
   {
       sizeof(PIXELFORMATDESCRIPTOR), 1,
@@ -216,7 +216,7 @@ INT EngineCreateWindow(const std::wstring &cTitle,
   ShowWindow(g_hWnd, SW_SHOW);
   SetForegroundWindow(g_hWnd);
   SetFocus(g_hWnd);
-  ResizeGLScene(iWinWidth, iWinHeight);
+  ResizeGLScene(g_sWindowConfiguration.iWindowWidth, g_sWindowConfiguration.iWindowHeight);
 
   InitGL();
 
@@ -228,7 +228,7 @@ INT EngineCreateWindow(const std::wstring &cTitle,
 void EngineDestroyWindow()
 {
 
-  if (g_bFullScreen)
+  if (g_sWindowConfiguration.bIsFullScreen)
   {
     ChangeDisplaySettings(NULL,0);
     ShowCursor(TRUE);
@@ -309,6 +309,9 @@ GLvoid ResizeGLScene(GLsizei width, GLsizei height)
     height = 1;
    
   }
+
+  g_sWindowConfiguration.iWindowWidth = width;
+  g_sWindowConfiguration.iWindowHeight = height;
 
   GLfloat aspect = (GLfloat)width/(GLfloat)height;
   glViewport(0, 0, width, height);

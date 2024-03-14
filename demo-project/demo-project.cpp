@@ -9,7 +9,7 @@
 
 #include <string>
 #include <engine_types.h>
-#include <configuration.h>
+
 
 
 
@@ -26,9 +26,14 @@ static bool HndlDraw(void)
 {
     size_t i = 0;
     size_t j = 0;
-    for (i = 0; i < SCREEN_WIDTH; i++)
+
+    int32_t windowWidth = 0;
+    int32_t windowHeight = 0;
+    bear::HndlEngineGetWindowSize(&windowWidth, &windowHeight);
+
+    for (i = 0; i < windowWidth; i++)
     {
-        for (j = 0; j < SCREEN_HEIGHT; j++)
+        for (j = 0; j < windowHeight; j++)
         {
             coordinate_t p = { (float)i,(float)j, -1.0f };
             color_t color = { rand() % 255u, rand() % 255u, rand() % 255u, 0 };

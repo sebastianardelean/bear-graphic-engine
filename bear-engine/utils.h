@@ -1,8 +1,15 @@
 #pragma once
+#include "pch.h"
 
 
+typedef struct
+{
+    int32_t iWindowWidth;
+    int32_t iWindowHeight;
+    uint8_t bIsFullScreen;
+    uint8_t bBitsPerColor;
 
-
+}window_t;
 
 
 
